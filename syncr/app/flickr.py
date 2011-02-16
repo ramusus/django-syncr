@@ -23,7 +23,14 @@ class FlickrSyncr:
     This app requires Beej's flickrapi library. Available at:
     http://flickrapi.sourceforge.net/
     """
-    def __init__(self, flickr_key, flickr_secret):
+    sync_content = {
+        'comments': True,
+        'sizes': True,
+        'exif': True,
+        'geo': True,
+    }
+
+    def __init__(self, flickr_key, flickr_secret, sync_content=None):
         """
         Construct a new FlickrSyncr object.
 
@@ -32,6 +39,11 @@ class FlickrSyncr:
           flickr_secret: a Flickr secret key as a string
         """
         self.flickr = flickrapi.FlickrAPI(flickr_key, flickr_secret, format='xmlnode')
+
+        # define what content to sync
+        if sync_content:
+            for key, value in sync_content.items():
+                self.sync_content[key] = value
 
     def user2nsid(self, username):
         """
@@ -54,16 +66,18 @@ class FlickrSyncr:
         Required arguments
           photo_id: a flickr photo id as a string
         """
-        result = self.flickr.photos_getSizes(photo_id=photo_id)
         sizes = dict()
-
         # Set defaults to None
         for label in ('Square','Thumbnail','Small','Medium','Medium 640','Large','Original'):
             sizes[label] = {'width': None, 'height': None}
-        # Set values given by flickr
-        for el in result.sizes[0].size:
-            sizes[el['label']]['width'] = el['width']
-            sizes[el['label']]['height'] = el['height']
+
+        if self.sync_content['sizes']:
+            result = self.flickr.photos_getSizes(photo_id=photo_id)
+            # Set values given by flickr
+            for el in result.sizes[0].size:
+                sizes[el['label']]['width'] = el['width']
+                sizes[el['label']]['height'] = el['height']
+
         return sizes
 
     def getPhotoComments(self, photo_id):
@@ -132,8 +146,9 @@ class FlickrSyncr:
                      'ISO Speed': '', 'Metering Mode': '', 'Flash': '',
                      'Focal Length': '', 'Color Space': ''}
         try:
+            assert self.sync_content['exif']
             result = self.flickr.photos_getExif(photo_id=photo_id)
-        except flickrapi.FlickrError:
+        except (flickrapi.FlickrError, AssertionError):
             return exif_data
 
         try:
@@ -156,8 +171,9 @@ class FlickrSyncr:
         geo_data = {'latitude': None, 'longitude': None, 'accuracy': None,
                     'locality': '', 'county': '', 'region': '', 'country': ''}
         try:
+            assert self.sync_content['geo']
             result = self.flickr.photos_geo_getLocation(photo_id=photo_id)
-        except flickrapi.FlickrError:
+        except (flickrapi.FlickrError, AssertionError):
             return geo_data
 
         geo_data['latitude'] = float(result.photo[0].location[0]['latitude'])
@@ -222,7 +238,6 @@ class FlickrSyncr:
         except KeyError:
             original_secret = ''
 
-
         default_dict = {
             'flickr_id': photo_xml.photo[0]['id'],
             'owner': photo_xml.photo[0].owner[0]['username'],
@@ -249,7 +264,7 @@ class FlickrSyncr:
             'original_width': sizes['Original']['width'] or 0,
             'original_height': sizes['Original']['height'] or 0,
             # Removed 'square_url': urls['Square'],
-            # Removed 'small_url': urls['Small'],
+            # Removed 'small_url': urls['Small'],sizes
             # Removed 'medium_url': urls['Medium'],
             # Removed 'thumbnail_url': urls['Thumbnail'],
             'tags': tags,
@@ -287,12 +302,13 @@ class FlickrSyncr:
             updated_obj.save()
 
         # Comments
-        comments = self.getPhotoComments(obj.flickr_id)
-        if comments is not None:
-            for c in comments:
-                c['photo'] = obj
-                comment, created = PhotoComment.objects.get_or_create(
-                                        flickr_id=c['flickr_id'], defaults=c)
+        if self.sync_content['comments']:
+            comments = self.getPhotoComments(obj.flickr_id)
+            if comments is not None:
+                for c in comments:
+                    c['photo'] = obj
+                    comment, created = PhotoComment.objects.get_or_create(flickr_id=c['flickr_id'], defaults=c)
+
         return obj
 
     def _syncPhotoXMLList(self, photos_xml):
