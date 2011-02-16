@@ -56,8 +56,9 @@ class FlickrSyncr:
         """
         result = self.flickr.photos_getSizes(photo_id=photo_id)
         sizes = dict()
+
         # Set defaults to None
-        for label in ('Square','Thumbnail','Small','Medium','Large','Original'):
+        for label in ('Square','Thumbnail','Small','Medium','Medium 640','Large','Original'):
             sizes[label] = {'width': None, 'height': None}
         # Set values given by flickr
         for el in result.sizes[0].size:
@@ -329,15 +330,13 @@ class FlickrSyncr:
           username: a flickr username as a string
         """
         nsid = self.user2nsid(username)
-        count = per_page = int(self.flickr.people_getInfo(
-		user_id=nsid).person[0].photos[0].count[0].text)
+        count = per_page = int(self.flickr.people_getInfo(user_id=nsid).person[0].photos[0].count[0].text)
         if count >= 500:
             per_page = 500
         pages = count // per_page
-        
+
         for page in range(0, pages):
-            result = self.flickr.people_getPublicPhotos(
-		user_id=nsid, per_page=per_page, page=page)
+            result = self.flickr.people_getPublicPhotos(user_id=nsid, per_page=per_page, page=page)
             self._syncPhotoXMLList(result.photos[0].photo)
 
     def syncRecentPhotos(self, username, days=1):
@@ -370,8 +369,7 @@ class FlickrSyncr:
           username: a flickr user name as a string
         """
         nsid = self.user2nsid(username)
-        favList, created = FavoriteList.objects.get_or_create( \
-	    owner = username, defaults = {'sync_date': datetime.now()})
+        favList, created = FavoriteList.objects.get_or_create(owner = username, defaults = {'sync_date': datetime.now()})
 
         result = self.flickr.favorites_getPublicList(user_id=nsid, per_page=500)
         page_count = int(result.photos[0]['pages'])
@@ -379,9 +377,9 @@ class FlickrSyncr:
             photo_list = self._syncPhotoXMLList(result.photos[0].photo)
             for photo in photo_list:
                 favList.photos.add(photo)
-		if page == 1:
-		    favList.primary = photo
-		    favList.save()
+                if page == 1:
+                    favList.primary = photo
+                    favList.save()
             result = self.flickr.favorites_getPublicList(user_id=nsid,
                         per_page=500, page=page+1)
 
@@ -397,28 +395,28 @@ class FlickrSyncr:
         username = self.flickr.people_getInfo(user_id = nsid).person[0].username[0].text
         result = self.flickr.photosets_getPhotos(photoset_id = photoset_id)
         page_count = int(result.photoset[0]['pages'])
-	primary = self.syncPhoto(photoset_xml.photoset[0]['primary'])
+        primary = self.syncPhoto(photoset_xml.photoset[0]['primary'])
 
         d_photoset, created = PhotoSet.objects.get_or_create(
-                flickr_id = photoset_id,
-                defaults = {
-			'owner': username,
-			'flickr_id': result.photoset[0]['id'],
-			'title': photoset_xml.photoset[0].title[0].text,
-			'description': photoset_xml.photoset[0].description[0].text,
-			'primary': primary,
-			'order': order
-			}
-		)
-	if not created: # update it
-	    d_photoset.owner  = username
-	    d_photoset.title  = photoset_xml.photoset[0].title[0].text
-	    d_photoset.description=photoset_xml.photoset[0].description[0].text
-	    d_photoset.primary = primary
-	    d_photoset.save()
+            flickr_id = photoset_id,
+            defaults = {
+                'owner': username,
+                'flickr_id': result.photoset[0]['id'],
+                'title': photoset_xml.photoset[0].title[0].text,
+                'description': photoset_xml.photoset[0].description[0].text,
+                'primary': primary,
+                'order': order
+            }
+        )
+        if not created: # update it
+            d_photoset.owner  = username
+            d_photoset.title  = photoset_xml.photoset[0].title[0].text
+            d_photoset.description=photoset_xml.photoset[0].description[0].text
+            d_photoset.primary = primary
+            d_photoset.save()
 
-	page_count = int(result.photoset[0]['pages'])
-	
+        page_count = int(result.photoset[0]['pages'])
+
         for page in range(1, page_count+1):
             if page > 1:
                 result = self.flickr.photosets_getPhotos(

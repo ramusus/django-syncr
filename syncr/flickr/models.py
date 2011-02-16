@@ -18,7 +18,7 @@ FLICKR_LICENSES = (
 
 class BigIntegerField(models.IntegerField):
     """
-    Defines a PostgreSQL compatible IntegerField needed to prevent 'integer 
+    Defines a PostgreSQL compatible IntegerField needed to prevent 'integer
     out of range' with large numbers.
     """
     def get_internal_type(self):
@@ -36,8 +36,7 @@ class Photo(models.Model):
     owner = models.CharField(max_length=50)
     owner_nsid = models.CharField(max_length=50)
     title = models.CharField(max_length=200)
-    slug = models.SlugField(unique_for_date='taken_date',
-                            help_text='Automatically built from the title.')
+    slug = models.SlugField(unique_for_date='taken_date', help_text='Automatically built from the title.', max_length=100)
     description = models.TextField(blank=True)
     taken_date = models.DateTimeField()
     upload_date = models.DateTimeField() # New
@@ -186,8 +185,7 @@ class FavoriteList(models.Model):
     owner = models.CharField(max_length=50)
     sync_date = models.DateTimeField()
     photos = models.ManyToManyField('Photo')
-    primary = models.ForeignKey( \
-	'Photo', related_name='primary_in', null=True)
+    primary = models.ForeignKey('Photo', related_name='primary_in', null=True)
 
     def numPhotos(self):
         return len(self.photo_list.objects.all())
@@ -197,8 +195,7 @@ class FavoriteList(models.Model):
 
 class PhotoSet(models.Model):
     flickr_id = models.CharField(primary_key=True, max_length=50)
-    primary = models.ForeignKey('Photo', null=True, default=None,
-                                related_name='primary_photo_set')
+    primary = models.ForeignKey('Photo', null=True, default=None, related_name='primary_photo_set')
     owner = models.CharField(max_length=50)
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
