@@ -48,18 +48,18 @@ class Photo(models.Model):
     original_secret = models.CharField(max_length=10, blank=True)
     # square_url = models.URLField() # Old
     # thumbnail_url = models.URLField() # Old
-    thumbnail_width = models.PositiveSmallIntegerField() # New
-    thumbnail_height = models.PositiveSmallIntegerField() # New
+    thumbnail_width = models.PositiveSmallIntegerField(null=True) # New
+    thumbnail_height = models.PositiveSmallIntegerField(null=True) # New
     # small_url = models.URLField() # Old
-    small_width = models.PositiveSmallIntegerField() # New
-    small_height = models.PositiveSmallIntegerField() # New
+    small_width = models.PositiveSmallIntegerField(null=True) # New
+    small_height = models.PositiveSmallIntegerField(null=True) # New
     # medium_url = models.URLField() # Old
     medium_width = models.PositiveSmallIntegerField(null=True) # New
     medium_height = models.PositiveSmallIntegerField(null=True) # New
     large_width = models.PositiveSmallIntegerField(null=True) # New
     large_height = models.PositiveSmallIntegerField(null=True) # New
-    original_width = models.PositiveSmallIntegerField() # New
-    original_height = models.PositiveSmallIntegerField() # New
+    original_width = models.PositiveSmallIntegerField(null=True) # New
+    original_height = models.PositiveSmallIntegerField(null=True) # New
     tags = TagField(blank=True)
     enable_comments = models.BooleanField(default=True)
     license = models.CharField(max_length=50, choices=FLICKR_LICENSES)
