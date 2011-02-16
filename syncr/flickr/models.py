@@ -36,7 +36,7 @@ class Photo(models.Model):
     owner = models.CharField(max_length=50)
     owner_nsid = models.CharField(max_length=50)
     title = models.CharField(max_length=200)
-    slug = models.SlugField(unique_for_date='taken_date', help_text='Automatically built from the title.', max_length=100)
+    slug = models.SlugField(unique_for_date='taken_date', help_text='Automatically built from the title.')
     description = models.TextField(blank=True)
     taken_date = models.DateTimeField()
     upload_date = models.DateTimeField() # New
@@ -88,6 +88,10 @@ class Photo(models.Model):
 
     def __unicode__(self):
         return u'%s' % self.title
+
+    def save(self, *args, **kwargs):
+        self.slug = self.slug[:50]
+        super(Photo, self).save(*args, **kwargs)
 
     @models.permalink
     def get_absolute_url(self):
