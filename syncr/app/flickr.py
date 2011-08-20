@@ -235,7 +235,7 @@ class FlickrSyncr:
                 tags = tags[:-1]
                 break
             if not tag[0].startswith('geo:'): # Exclude ugly geo-tags
-                tags += u'%s ' % tag[0]
+                tags += u'%s ' % tag[0][:50]
                 count += tag[1]
 
         try:
@@ -247,7 +247,7 @@ class FlickrSyncr:
             'flickr_id': photo_xml.photo[0]['id'],
             'owner': photo_xml.photo[0].owner[0]['username'],
             'owner_nsid': photo_xml.photo[0].owner[0]['nsid'],
-            'title': photo_xml.photo[0].title[0].text, # TODO: Typography
+            'title': photo_xml.photo[0].title[0].text[:200], # TODO: Typography
             'slug': slug,
             'description': photo_xml.photo[0].description[0].text,
             'taken_date': taken_date,
