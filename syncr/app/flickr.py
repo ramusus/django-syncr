@@ -217,10 +217,7 @@ class FlickrSyncr:
         geo_data = self.getGeoLocation(photo_id)
 
         # handle only year definition
-        if photo_xml.photo[0].dates[0]['taken'][4:] == '-00-01 00:00:00':
-            taken_date = strptime(photo_xml.photo[0].dates[0]['taken'][:4], "%Y")
-        else:
-            taken_date = strptime(photo_xml.photo[0].dates[0]['taken'], "%Y-%m-%d %H:%M:%S")
+        taken_date = strptime(photo_xml.photo[0].dates[0]['taken'].replace('-00','-01'), "%Y-%m-%d %H:%M:%S")
         taken_date = datetime(*taken_date[:7])
         upload_date = datetime.fromtimestamp(int(photo_xml.photo[0].dates[0]['posted']))
         update_date = datetime.fromtimestamp(int(photo_xml.photo[0].dates[0]['lastupdate']))
