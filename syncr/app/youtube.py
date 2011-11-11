@@ -34,7 +34,7 @@ class YoutubeSyncr:
     """
     _youtubeGDataHost = 'gdata.youtube.com'
     _youtubeFeedBase  = '/feeds/api/'
-    
+
     def _request(self, url):
         f = urllib.urlopen(url)
         tree = ET.parse(f)
@@ -65,30 +65,34 @@ class YoutubeSyncr:
         """
         result = self._request(video_feed)
         video_id = result.findtext('{%s}id' % ATOM_NS).replace('http://' + self._youtubeGDataHost + self._youtubeFeedBase + 'videos/', '')
+        try:
+            author = self.syncUserFeed(result.findtext('{%s}author/{%s}uri' % (ATOM_NS, ATOM_NS)))
+        except:
+            author = YoutubeUser.objects.get(pk=0)
+
+        thumbnails = filter(lambda x: x.attrib['height'] == '240', result.findall('{%s}group/{%s}thumbnail' % (MRSS_NS, MRSS_NS)))
+
         default_dict = {
-	    'feed': video_feed,
-	    'video_id': video_id,
-	    'published': self.gtime2datetime(result.findtext(
-		    '{%s}published' % ATOM_NS)),
-	    'updated': self.gtime2datetime(result.findtext(
-		    '{%s}updated' % ATOM_NS)),
-	    'title': result.findtext('{%s}title' % ATOM_NS),
-	    'author': self.syncUserFeed(result.findtext(
-		    '{%s}author/{%s}uri' % (ATOM_NS, ATOM_NS))),
-	    'description': result.findtext(
-		'{%s}group/{%s}description' % (MRSS_NS, MRSS_NS)) or '',
-	    'tag_list': result.findtext(
-		'{%s}group/{%s}keywords' % (MRSS_NS, MRSS_NS)),
-	    'view_count': getattr(result.find('{%s}statistics' % YOUTUBE_NS),
-				  'attrib', {}).get('viewCount', 0),
-	    'url': filter(lambda x: x.attrib['rel'] == 'alternate',
-			  result.findall('{%s}link' %
-					 ATOM_NS))[0].attrib['href'],
-	    'thumbnail_url': filter(lambda x: x.attrib['height'] == '240',
-				    result.findall('{%s}group/{%s}thumbnail' % (MRSS_NS, MRSS_NS)))[0].attrib['url'],
-	    'length': result.find('{%s}group/{%s}duration' %
-				  (MRSS_NS, YOUTUBE_NS)).attrib['seconds'],
-	    }
+        'feed': video_feed,
+        'video_id': video_id,
+        'published': self.gtime2datetime(result.findtext(
+            '{%s}published' % ATOM_NS)),
+        'updated': self.gtime2datetime(result.findtext(
+            '{%s}updated' % ATOM_NS)),
+        'title': result.findtext('{%s}title' % ATOM_NS),
+        'author': author,
+        'description': result.findtext(
+        '{%s}group/{%s}description' % (MRSS_NS, MRSS_NS)) or '',
+        'tag_list': result.findtext(
+        '{%s}group/{%s}keywords' % (MRSS_NS, MRSS_NS)),
+        'view_count': getattr(result.find('{%s}statistics' % YOUTUBE_NS),
+                  'attrib', {}).get('viewCount', 0),
+        'url': filter(lambda x: x.attrib['rel'] == 'alternate',
+              result.findall('{%s}link' % ATOM_NS))[0].attrib['href'],
+        'thumbnail_url': thumbnails[0].attrib['url'] if thumbnails else '',
+        'length': result.find('{%s}group/{%s}duration' %
+                  (MRSS_NS, YOUTUBE_NS)).attrib['seconds'],
+        }
         obj, created = Video.objects.get_or_create(feed = video_feed,
                                                    defaults=default_dict)
         return obj
@@ -120,15 +124,15 @@ class YoutubeSyncr:
                                       result.findall('{%s}link' % ATOM_NS))[0].attrib['href'],
                         'watch_count': 0,
                         }
-	try:
-	    if 'videoWatchCount' in result.find('{%s}statistics' % YOUTUBE_NS).keys():
-		default_dict['watch_count'] = result.find('{%s}statistics' % YOUTUBE_NS).attrib['videoWatchCount']
-	except AttributeError:
-	    default_dict['watch_count'] = 0
-	    
-	if result.find('{%s}thumbnail' % MRSS_NS):
-	    default_dict['thumbnail_url'] = result.find('{%s}thumbnail' % MRSS_NS).attrib['url']
-	    
+        try:
+            if 'videoWatchCount' in result.find('{%s}statistics' % YOUTUBE_NS).keys():
+                default_dict['watch_count'] = result.find('{%s}statistics' % YOUTUBE_NS).attrib['videoWatchCount']
+        except AttributeError:
+            default_dict['watch_count'] = 0
+
+        if result.find('{%s}thumbnail' % MRSS_NS):
+            default_dict['thumbnail_url'] = result.find('{%s}thumbnail' % MRSS_NS).attrib['url']
+
         obj, created = YoutubeUser.objects.get_or_create(username=username,
                                                   defaults=default_dict)
         return obj
@@ -154,7 +158,7 @@ class YoutubeSyncr:
         obj, created = PlaylistVideo.objects.get_or_create(feed = entry.findtext('{%s}id' % ATOM_NS),
                                                            defaults=default_dict)
         return obj
-        
+
     def syncPlaylist(self, playlist_id):
         """Synchronize a Youtube playlist based on playlist id
 
@@ -214,17 +218,17 @@ class YoutubeSyncr:
         return user.favorites.all()
 
     def syncUserUploads(self, username):
-	"""Synchronize a user's uploads feed
+        """Synchronize a user's uploads feed
 
-	Required arguments
-	  username: a Youtube username as a string
-	"""
-	user = self.syncUser(username)
-	videos = self._syncFeed('http://'+self._youtubeGDataHost+self._youtubeFeedBase+'users/%s/uploads' % username)
+        Required arguments
+          username: a Youtube username as a string
+        """
+        user = self.syncUser(username)
+        videos = self._syncFeed('http://'+self._youtubeGDataHost+self._youtubeFeedBase+'users/%s/uploads' % username)
 
-	for video in videos:
-	    user.uploads.add(video)
-	return user.uploads.all()
+        for video in videos:
+            user.uploads.add(video)
+        return user.uploads.all()
 
     def _getSyncFeedParams(self, startIndex=None, maxResults=None):
         param_build = []
