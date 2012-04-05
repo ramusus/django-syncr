@@ -68,7 +68,7 @@ class FlickrSyncr:
         """
         sizes = dict()
         # Set defaults to None
-        for label in ('Large Square','Square','Thumbnail','Small','Medium','Medium 640','Large','Original'):
+        for label in ('Large Square','Square','Thumbnail','Small','Small 320','Medium','Medium 640','Large','Original'):
             sizes[label] = {'width': None, 'height': None}
 
         if self.sync_content['sizes']:
