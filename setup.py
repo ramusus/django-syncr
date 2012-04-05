@@ -8,6 +8,9 @@ setup(
     author_email='jesse.legg@gmail.com',
     url='http://code.google.com/p/django-syncr',
     packages=find_packages(),
+    install_requires=[
+        'django-tagging',
+    ],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Web Environment',

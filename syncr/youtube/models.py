@@ -23,9 +23,11 @@ class Video(models.Model):
         Tag.objects.update_tags(self, tag_list)
     tags = property(_get_tags, _set_tags)
 
-    def save(self, force_insert=False, force_update=False):
+    def save(self, force_insert=False, force_update=False, **kwargs):
+        self.title = self.title[:250]
+        self.tag_list = self.tag_list[:250]
         super(Video, self).save(force_insert=force_insert,
-				force_update=force_update)
+                force_update=force_update, **kwargs)
         Tag.objects.update_tags(self, self.tag_list)
 
     def embed_url(self):
@@ -57,7 +59,7 @@ class PlaylistVideo(models.Model):
 
     def __unicode__(self):
         return u'%s' % self.title
-    
+
 class YoutubeUser(models.Model):
     GENDER_CHOICES = (
         ('m', 'Male'),
@@ -78,7 +80,7 @@ class YoutubeUser(models.Model):
 
     def __unicode__(self):
         return u'%s' % self.username
-    
+
     def sync(self):
         from syncr.app.youtube import YoutubeSyncr
         yts = YoutubeSyncr()
@@ -86,4 +88,4 @@ class YoutubeUser(models.Model):
         yts.syncUserUploads(self.username)
         yts.syncUserFavorites(self.username)
         yts.syncUserPlaylists(self.username)
-        
+
