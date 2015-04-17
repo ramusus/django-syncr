@@ -1,6 +1,6 @@
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
-from tagging.models import Tag, TaggedItem
+from tagging.models import Tag
 
 
 class Video(models.Model):
@@ -75,7 +75,7 @@ class YoutubeUser(models.Model):
     playlists   = models.ManyToManyField('Playlist')
     favorites   = models.ManyToManyField('Video', related_name='favorited_by')
     uploads     = models.ManyToManyField('Video', related_name='uploaded_by')
-    user        = models.OneToOneField(User, related_name="youtube_acct",
+    user        = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="youtube_acct",
                                        null=True, blank=True)
 
     def __unicode__(self):
